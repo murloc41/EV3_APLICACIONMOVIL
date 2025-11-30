@@ -1,0 +1,61 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/home"></ion-back-button>
+    </ion-buttons>
+
+    <ion-title>💊 Listado de Medicamentos</ion-title>
+
+    </ion-toolbar>
+
+  <ion-toolbar>
+    <ion-searchbar placeholder="Buscar medicamento por nombre"></ion-searchbar>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+
+  <ion-list *ngIf="medicamentos.length > 0; else noMedicamentos">
+    
+    <ion-item 
+        *ngFor="let m of medicamentos" 
+        detail 
+        [routerLink]="['/medicamento-detalle', m.id]" 
+        routerDirection="forward"
+    >
+      
+      <ion-icon slot="start" name="medkit-outline"></ion-icon>
+      
+      <ion-label>
+        <h2>{{ m.nombre }} ({{ m.dosisMg }} mg)</h2>
+        <p>Tipo: {{ m.tipo }}</p>
+        
+        <ion-note color="warning" *ngIf="m.usoDelicado">
+          <ion-icon name="alert-circle-outline" class="ion-margin-end"></ion-icon>
+          Medicamento de Uso Delicado
+        </ion-note>
+
+      </ion-label>
+
+      <ion-buttons slot="end" (click)="$event.stopPropagation()">
+        
+        <ion-button [routerLink]="['/medicamento-detalle', m.id]">
+          <ion-icon slot="icon-only" name="create-outline" color="medium"></ion-icon>
+        </ion-button>
+
+        <ion-button color="danger" (click)="confirmarEliminacion(m.id, $event)">
+          <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
+        </ion-button>
+      </ion-buttons>
+
+    </ion-item>
+  </ion-list>
+
+  <ng-template #noMedicamentos>
+    <ion-item>
+      <ion-label class="ion-text-center">No hay medicamentos registrados.</ion-label>
+    </ion-item>
+  </ng-template>
+
+</ion-content>

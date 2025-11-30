@@ -1,0 +1,80 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/listado"></ion-back-button>
+    </ion-buttons>
+
+    <ion-title>Detalle: {{ pacienteActual.nombre || 'Paciente' }}</ion-title>
+
+    <ion-buttons slot="end">
+      <ion-button color="danger" (click)="mostrarConfirmacionEliminar()">
+        <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+
+  <ion-list class="ion-margin-vertical ion-padding-horizontal">
+    <ion-label position="stacked"> Foto del Paciente (Periférico 1)</ion-label>
+    
+    <div class="ion-padding-vertical">
+        <img [src]="fotoUrl" 
+            *ngIf="fotoUrl" 
+            style="max-width: 100%; height: 250px; object-fit: cover; border: 2px solid var(--ion-color-secondary); border-radius: 8px;">
+        
+        <div *ngIf="!fotoUrl" style="height: 250px; background-color: #f4f4f4; border: 1px solid #ddd; display: flex; align-items: center; justify-content: center; border-radius: 8px;">
+            <ion-text color="medium">Sin foto asignada</ion-text>
+        </div>
+    </div>
+
+    <ion-button expand="full" color="secondary" (click)="tomarFoto()">
+        <ion-icon slot="start" name="camera-outline"></ion-icon>
+        Tomar Foto / Actualizar Foto
+    </ion-button>
+  </ion-list>
+  <ion-list class="ion-margin-vertical ion-padding-horizontal">
+    <ion-label position="stacked"> Ubicación de Ficha (Periférico 2)</ion-label>
+    
+    <ion-button expand="full" fill="outline" color="tertiary" (click)="obtenerUbicacion()">
+      <ion-icon slot="start" name="locate-outline"></ion-icon>
+      Capturar Ubicación Actual
+    </ion-button>
+    
+    <ion-note color="medium" *ngIf="ubicacionActual" class="ion-padding-start ion-padding-top ion-text-wrap">
+      {{ ubicacionActual }}
+    </ion-note>
+
+  </ion-list>
+  <form [formGroup]="pacienteForm" (ngSubmit)="guardarCambios()">
+
+    <ion-item lines="full">
+      <ion-label position="floating">Nombre Completo</ion-label>
+      <ion-input formControlName="nombre"></ion-input>
+    </ion-item>
+    <ion-item lines="full" class="ion-margin-top">
+      <ion-label position="floating">ID/RUT Paciente</ion-label>
+      <ion-input formControlName="idPaciente"></ion-input>
+    </ion-item>
+    <ion-item lines="full" class="ion-margin-top">
+      <ion-label position="floating">Piso (Internación)</ion-label>
+      <ion-input type="number" formControlName="piso"></ion-input>
+    </ion-item>
+    <ion-item lines="full" class="ion-margin-top">
+      <ion-label>Turno Asignado</ion-label>
+      <ion-select formControlName="turno" placeholder="Seleccione el turno">
+        <ion-select-option *ngFor="let turno of turnos" [value]="turno">
+          {{ turno }}
+        </ion-select-option>
+      </ion-select>
+    </ion-item>
+    
+    <ion-button expand="full" type="submit" [disabled]="pacienteForm.invalid" class="ion-margin-top" color="success">
+      <ion-icon slot="start" name="save-outline"></ion-icon>
+      Guardar Cambios
+    </ion-button>
+
+  </form>
+</ion-content>

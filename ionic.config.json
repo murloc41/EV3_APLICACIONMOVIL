@@ -1,0 +1,7 @@
+{
+  "name": "Esculappmed",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "angular-standalone"
+}

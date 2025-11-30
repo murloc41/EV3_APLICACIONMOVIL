@@ -1,0 +1,62 @@
+<ion-header [translucent]="true">
+    <ion-toolbar>
+        <ion-title>Panel de Control</ion-title>
+
+        <ion-buttons slot="end">
+            <ion-button color="danger" (click)="logout()"> 
+                <ion-icon slot="start" name="log-out-outline"></ion-icon>
+                Salir
+            </ion-button>
+        </ion-buttons>
+
+    </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+    
+    <h1 class="ion-text-center">Selecciona un Módulo</h1>
+    
+    <ion-grid>
+        <ion-row class="ion-justify-content-center">
+            
+            <ion-col size="12" size-md="5">
+                <ion-card [routerLink]="['/listado']">
+                    <ion-card-header class="ion-text-center">
+                        <ion-icon name="people-circle-outline" size="large" color="primary"></ion-icon>
+                        <ion-card-title>Pacientes</ion-card-title>
+                    </ion-card-header>
+                    <ion-card-content class="ion-text-center">
+                        Ver, agregar y gestionar fichas de pacientes.
+                    </ion-card-content>
+                </ion-card>
+            </ion-col>
+
+            <ion-col size="12" size-md="5">
+                <ion-card [routerLink]="['/medicamento-listado']">
+                    <ion-card-header class="ion-text-center">
+                        <ion-icon name="medkit-outline" size="large" color="success"></ion-icon>
+                        <ion-card-title>Medicamentos</ion-card-title>
+                    </ion-card-header>
+                    <ion-card-content class="ion-text-center">
+                        Ver, agregar y gestionar inventario de medicamentos.
+                    </ion-card-content>
+                </ion-card>
+            </ion-col>
+            
+        </ion-row>
+
+        <hr class="ion-margin-vertical">
+
+        <ion-row class="ion-justify-content-center ion-margin-top">
+            <ion-col size="12" size-md="10">
+                <ion-button 
+                    expand="block" 
+                    color="secondary"
+                    [routerLink]="['/tabs/paciente']">
+                    <ion-icon slot="start" name="add-circle-outline"></ion-icon>
+                    Nuevo Registro (Pacientes / Medicamentos)
+                </ion-button>
+            </ion-col>
+        </ion-row>
+    </ion-grid>
+</ion-content>

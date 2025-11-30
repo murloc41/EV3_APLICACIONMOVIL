@@ -1,0 +1,62 @@
+<ion-header [translucent]="true">
+    <ion-toolbar>
+        
+        <ion-buttons slot="start">
+            <ion-back-button defaultHref="/login"></ion-back-button>
+        </ion-buttons>
+
+        <ion-title>
+            <ion-icon name="person-add-outline" class="ion-margin-end"></ion-icon>
+            Registro de Nuevo Usuario
+        </ion-title>
+    </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+
+    <form [formGroup]="registroForm" (ngSubmit)="submitRegistro()">
+
+        <ion-item lines="full" class="ion-margin-top">
+            <ion-icon slot="start" name="person-add-outline"></ion-icon>
+            <ion-label position="floating">Nombre de Usuario</ion-label>
+            <ion-input formControlName="nombre"></ion-input>
+        </ion-item>
+        <ion-text color="danger">
+            <p class="ion-padding-start ion-no-margin" *ngIf="registroForm.get('nombre')?.invalid && registroForm.get('nombre')?.touched">Nombre es obligatorio y debe tener al menos 3 caracteres.</p>
+        </ion-text>
+
+        <ion-item lines="full" class="ion-margin-top">
+            <ion-icon slot="start" name="mail-outline"></ion-icon>
+            <ion-label position="floating">Correo Electrónico</ion-label>
+            <ion-input type="email" formControlName="email"></ion-input>
+        </ion-item>
+        <ion-text color="danger">
+            <p class="ion-padding-start ion-no-margin" *ngIf="registroForm.get('email')?.errors?.['required'] && registroForm.get('email')?.touched">El correo es obligatorio.</p>
+            <p class="ion-padding-start ion-no-margin" *ngIf="registroForm.get('email')?.errors?.['email'] && registroForm.get('email')?.touched">Formato de correo inválido.</p>
+        </ion-text>
+
+        <ion-item lines="full" class="ion-margin-top">
+            <ion-icon slot="start" name="lock-closed-outline"></ion-icon>
+            <ion-label position="floating">Contraseña</ion-label>
+            <ion-input type="password" formControlName="password"></ion-input>
+        </ion-item>
+        <ion-text color="danger">
+            <p class="ion-padding-start ion-no-margin" *ngIf="registroForm.get('password')?.invalid && registroForm.get('password')?.touched">La contraseña debe tener al menos 6 caracteres.</p>
+        </ion-text>
+        
+        <ion-item lines="full" class="ion-margin-top">
+            <ion-icon slot="start" name="lock-closed-outline"></ion-icon>
+            <ion-label position="floating">Confirmar Contraseña</ion-label>
+            <ion-input type="password" formControlName="confirmPassword"></ion-input>
+        </ion-item>
+        <ion-text color="danger">
+            <p class="ion-padding-start ion-no-margin" *ngIf="registroForm.get('confirmPassword')?.invalid && registroForm.get('confirmPassword')?.touched">Debe confirmar su contraseña.</p>
+            </ion-text>
+        
+
+        <ion-button expand="full" type="submit" class="ion-margin-top" color="primary">
+            <ion-icon slot="start" name="save-outline"></ion-icon>
+            Crear Cuenta
+        </ion-button>
+    </form>
+</ion-content>

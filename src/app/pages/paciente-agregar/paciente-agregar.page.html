@@ -1,0 +1,90 @@
+<ion-header [translucent]="true">
+    <ion-toolbar>
+      
+        <ion-buttons slot="start">
+            <ion-back-button defaultHref="/home"></ion-back-button>
+        </ion-buttons>
+
+        <ion-title>
+            <ion-icon name="person-add-outline" class="ion-margin-end"></ion-icon>
+            Registrar Nuevo Paciente
+        </ion-title>
+        
+    </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+    <form [formGroup]="pacienteForm" (ngSubmit)="submitPaciente()">
+
+        <ion-item lines="full">
+            <ion-label position="floating">Nombre Completo</ion-label>
+            <ion-input formControlName="nombre"></ion-input>
+        </ion-item>
+        
+        <div *ngIf="pacienteForm.get('nombre')?.invalid && (pacienteForm.get('nombre')?.dirty || pacienteForm.get('nombre')?.touched)">
+            <ion-text color="danger">
+                <p class="ion-padding-start ion-no-margin" *ngIf="pacienteForm.get('nombre')?.errors?.['required']">
+                    El nombre del paciente es obligatorio.
+                </p>
+                <p class="ion-padding-start ion-no-margin" *ngIf="pacienteForm.get('nombre')?.errors?.['minlength']">
+                    El nombre debe tener al menos 3 caracteres.
+                </p>
+            </ion-text>
+        </div>
+
+
+        <ion-item lines="full" class="ion-margin-top">
+            <ion-label position="floating">ID/RUT Paciente</ion-label>
+            <ion-input formControlName="idPaciente"></ion-input>
+        </ion-item>
+        
+        <div *ngIf="pacienteForm.get('idPaciente')?.invalid && (pacienteForm.get('idPaciente')?.dirty || pacienteForm.get('idPaciente')?.touched)">
+            <ion-text color="danger">
+                <p class="ion-padding-start ion-no-margin" *ngIf="pacienteForm.get('idPaciente')?.errors?.['required']">
+                    El ID/RUT es obligatorio.
+                </p>
+                <p class="ion-padding-start ion-no-margin" *ngIf="pacienteForm.get('idPaciente')?.errors?.['pattern']">
+                    Formato incorrecto. Ej: 12345678-9
+                </p>
+            </ion-text>
+        </div>
+
+        <ion-item lines="full" class="ion-margin-top">
+            <ion-label position="floating">Piso (Internación)</ion-label>
+            <ion-input type="number" formControlName="piso"></ion-input>
+        </ion-item>
+        
+        <div *ngIf="pacienteForm.get('piso')?.invalid && (pacienteForm.get('piso')?.dirty || pacienteForm.get('piso')?.touched)">
+            <ion-text color="danger">
+                <p class="ion-padding-start ion-no-margin" *ngIf="pacienteForm.get('piso')?.errors?.['required']">
+                    El número de piso es obligatorio.
+                </p>
+                <p class="ion-padding-start ion-no-margin" *ngIf="pacienteForm.get('piso')?.errors?.['min']">
+                    El piso debe ser al menos 1.
+                </p>
+            </ion-text>
+        </div>
+
+        <ion-item lines="full" class="ion-margin-top">
+            <ion-label>Turno Asignado</ion-label>
+            <ion-select formControlName="turno" placeholder="Seleccione el turno">
+                <ion-select-option *ngFor="let turno of turnos" [value]="turno">
+                    {{ turno }}
+                </ion-select-option>
+            </ion-select>
+        </ion-item>
+        
+        <div *ngIf="pacienteForm.get('turno')?.invalid && (pacienteForm.get('turno')?.dirty || pacienteForm.get('turno')?.touched)">
+            <ion-text color="danger">
+                <p class="ion-padding-start ion-no-margin" *ngIf="pacienteForm.get('turno')?.errors?.['required']">
+                    Debe seleccionar un turno.
+                </p>
+            </ion-text>
+        </div>
+
+        <ion-button expand="full" type="submit" [disabled]="pacienteForm.invalid" class="ion-margin-top">
+            <ion-icon slot="start" name="save-outline"></ion-icon>
+            Registrar Paciente
+        </ion-button>
+    </form>
+</ion-content>

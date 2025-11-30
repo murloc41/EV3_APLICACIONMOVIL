@@ -1,0 +1,56 @@
+<ion-header [translucent]="true">
+    <ion-toolbar>
+        
+        <ion-buttons slot="start">
+            <ion-back-button defaultHref="/medicamento-listado"></ion-back-button>
+        </ion-buttons>
+
+        <ion-title>
+            <ion-icon name="medkit-outline" class="ion-margin-end"></ion-icon>
+            Editar: {{ medicamentoActual.nombre || 'Medicamento' }}
+        </ion-title>
+
+        <ion-buttons slot="end">
+            <ion-button color="danger" (click)="mostrarConfirmacionEliminar()">
+                <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
+            </ion-button>
+        </ion-buttons>
+    </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+    
+    <form [formGroup]="medicamentoForm" (ngSubmit)="guardarCambios()">
+
+        <ion-item lines="full">
+            <ion-label position="floating">Nombre Comercial/Genérico</ion-label>
+            <ion-input formControlName="nombre"></ion-input>
+        </ion-item>
+        <ion-item lines="full" class="ion-margin-top">
+            <ion-label position="floating">Dosis (mg)</ion-label>
+            <ion-input type="number" formControlName="dosisMg"></ion-input>
+        </ion-item>
+        <ion-item lines="full" class="ion-margin-top">
+            <ion-label>Tipo de Medicamento</ion-label>
+            <ion-select formControlName="tipo" placeholder="Seleccione el tipo">
+                <ion-select-option *ngFor="let tipo of tiposMedicamento" [value]="tipo">
+                    {{ tipo }}
+                </ion-select-option>
+            </ion-select>
+        </ion-item>
+
+        <ion-item lines="full" class="ion-margin-top">
+            <ion-toggle formControlName="usoDelicado">Uso Delicado / Controlado</ion-toggle>
+        </ion-item>
+        
+        <ion-note class="ion-padding-start">
+            Indica si el medicamento requiere supervisión especial o es de alto riesgo.
+        </ion-note>
+
+        <ion-button expand="full" type="submit" [disabled]="medicamentoForm.invalid" class="ion-margin-top" color="success">
+            <ion-icon slot="start" name="save-outline"></ion-icon>
+            Guardar Cambios
+        </ion-button>
+
+    </form>
+</ion-content>

@@ -1,0 +1,54 @@
+<ion-content class="ion-padding ion-text-center">
+
+  <ion-header collapse="condense">
+    <ion-toolbar>
+      <ion-title size="large">Iniciar Sesión</ion-title>
+    </ion-toolbar>
+  </ion-header>
+
+  <div class="ion-padding-top">
+    <h2>Bienvenido al Sistema</h2>
+    <p>Ingrese sus credenciales para continuar</p>
+  </div>
+
+  <form [formGroup]="loginForm" (ngSubmit)="iniciarSesion()" class="ion-padding-vertical">
+
+    <ion-item lines="full" class="ion-margin-vertical">
+      <ion-label position="floating">Usuario (Email)</ion-label>
+      <ion-input formControlName="usuario" type="email" placeholder="ej. admin@mail.com"></ion-input>
+    </ion-item>
+    
+    <ion-text color="danger" class="ion-text-start" *ngIf="f['usuario'].invalid && f['usuario'].touched">
+      <ion-note *ngIf="f['usuario'].errors?.['required']">El email es obligatorio.</ion-note>
+      <ion-note *ngIf="f['usuario'].errors?.['email']">Debe ser un email válido.</ion-note>
+    </ion-text>
+
+    <ion-item lines="full" class="ion-margin-vertical">
+      <ion-label position="floating">Contraseña</ion-label>
+      <ion-input formControlName="contrasena" type="password"></ion-input>
+    </ion-item>
+    
+    <ion-text color="danger" class="ion-text-start" *ngIf="f['contrasena'].invalid && f['contrasena'].touched">
+      <ion-note *ngIf="f['contrasena'].errors?.['required']">La contraseña es obligatoria.</ion-note>
+      <ion-note *ngIf="f['contrasena'].errors?.['minlength']">Mínimo 6 caracteres.</ion-note>
+    </ion-text>
+
+    <ion-text color="danger" class="ion-margin-top" *ngIf="mensajeError">
+      <p>{{ mensajeError }}</p>
+    </ion-text>
+
+
+    <ion-button expand="block" type="submit" [disabled]="loginForm.invalid" class="ion-margin-top">
+      <ion-icon slot="start" name="log-in-outline"></ion-icon>
+      Entrar
+    </ion-button>
+
+  </form>
+
+  <ion-buttons class="ion-justify-content-center ion-margin-top">
+    <ion-button fill="clear" color="medium" (click)="irARegistro()">
+      ¿No tienes cuenta? Regístrate aquí
+    </ion-button>
+  </ion-buttons>
+  
+</ion-content>
