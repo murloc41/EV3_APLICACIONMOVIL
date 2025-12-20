@@ -1,7 +1,7 @@
 <ion-header [translucent]="true">
-  <ion-toolbar>
+  <ion-toolbar color="primary">
     <ion-title>
-      Tab 3
+      API REST Demo
     </ion-title>
   </ion-toolbar>
 </ion-header>
@@ -9,9 +9,106 @@
 <ion-content [fullscreen]="true">
   <ion-header collapse="condense">
     <ion-toolbar>
-      <ion-title size="large">Tab 3</ion-title>
+      <ion-title size="large">API REST</ion-title>
     </ion-toolbar>
   </ion-header>
 
-  <app-explore-container name="Tab 3 page"></app-explore-container>
+  <!-- Pull to refresh -->
+  <ion-refresher slot="fixed" (ionRefresh)="refrescar($event)">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
+  <!-- Estado de conexión -->
+  <ion-card>
+    <ion-card-header>
+      <ion-card-title>
+        <ion-icon [name]="apiConectada ? 'checkmark-circle' : 'close-circle'" 
+                  [color]="apiConectada ? 'success' : 'danger'"></ion-icon>
+        Estado de API
+      </ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <p>
+        <strong>Endpoint:</strong> jsonplaceholder.typicode.com<br>
+        <strong>Estado:</strong> 
+        <ion-badge [color]="apiConectada ? 'success' : 'danger'">
+          {{ apiConectada ? 'Conectado' : 'Sin conexión' }}
+        </ion-badge>
+      </p>
+      <ion-button expand="block" (click)="cargarDatos()" [disabled]="loading">
+        <ion-icon slot="start" name="refresh-outline"></ion-icon>
+        Recargar Datos
+      </ion-button>
+      <ion-button expand="block" fill="outline" (click)="crearUsuario()" [disabled]="loading">
+        POST - Crear Usuario
+      </ion-button>
+    </ion-card-content>
+  </ion-card>
+
+  <!-- Spinner de carga -->
+  <div *ngIf="loading" style="text-align: center; padding: 20px;">
+    <ion-spinner color="primary"></ion-spinner>
+    <p>Cargando datos de la API...</p>
+  </div>
+
+  <!-- Lista de Usuarios (GET) -->
+  <ion-card *ngIf="!loading && usuarios.length > 0">
+    <ion-card-header>
+      <ion-card-title>
+        <ion-icon name="people-outline"></ion-icon>
+        Usuarios (GET /users)
+      </ion-card-title>
+    </ion-card-header>
+    <ion-list>
+      <ion-item *ngFor="let usuario of usuarios" button (click)="verDetalleUsuario(usuario.id)">
+        <ion-label>
+          <h2>{{ usuario.name }}</h2>
+          <p>{{ usuario.email }}</p>
+          <p><small>ID: {{ usuario.id }} • {{ usuario.address.city }}</small></p>
+        </ion-label>
+        <ion-button fill="clear" slot="end" (click)="actualizarUsuario(usuario); $event.stopPropagation()">
+          PUT
+        </ion-button>
+        <ion-button fill="clear" slot="end" color="danger" (click)="eliminarUsuario(usuario); $event.stopPropagation()">
+          DELETE
+        </ion-button>
+      </ion-item>
+    </ion-list>
+  </ion-card>
+
+  <!-- Lista de Posts (GET) -->
+  <ion-card *ngIf="!loading && posts.length > 0">
+    <ion-card-header>
+      <ion-card-title>
+        <ion-icon name="document-text-outline"></ion-icon>
+        Posts (GET /posts)
+      </ion-card-title>
+    </ion-card-header>
+    <ion-list>
+      <ion-item *ngFor="let post of posts">
+        <ion-label class="ion-text-wrap">
+          <h3>{{ post.title }}</h3>
+          <p>{{ post.body.substring(0, 80) }}...</p>
+          <p><small>Post ID: {{ post.id }} • User ID: {{ post.userId }}</small></p>
+        </ion-label>
+      </ion-item>
+    </ion-list>
+  </ion-card>
+
+  <!-- Información sobre HTTP Methods -->
+  <ion-card>
+    <ion-card-header>
+      <ion-card-title>📚 HTTP Methods Implementados</ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <ul>
+        <li><strong>GET:</strong> Obtener usuarios y posts</li>
+        <li><strong>POST:</strong> Crear nuevo usuario</li>
+        <li><strong>PUT:</strong> Actualizar usuario existente</li>
+        <li><strong>DELETE:</strong> Eliminar usuario</li>
+      </ul>
+      <p><small>⚡ Interceptores, timeout, retry y manejo de errores implementados</small></p>
+    </ion-card-content>
+  </ion-card>
+
 </ion-content>

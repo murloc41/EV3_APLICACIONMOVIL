@@ -17,19 +17,34 @@ export class MedicamentoService {
   private storage: Storage | null = null;
   private medicamentosSubject = new BehaviorSubject<Medicamento[]>([]);
   public medicamentos$ = this.medicamentosSubject.asObservable();
-  private nextId = 105; // Para generar IDs nuevos
+  private nextId = 105;
+  private storageReady: Promise<void>; // ⚡ Promise para esperar inicialización
 
   constructor(private storageService: Storage) {
-    this.initStorage();
+    this.storageReady = this.initStorage();
   }
 
   /**
    * Inicializa el Storage y carga datos por defecto
    */
-  async initStorage() {
-    await this.storageService.create();
-    this.storage = this.storageService;
-    await this.cargarMedicamentosDelStorage();
+  async initStorage(): Promise<void> {
+    try {
+      this.storage = await this.storageService.create();
+      await this.cargarMedicamentosDelStorage();
+      console.log('✅ MedicamentoService: Storage inicializado');
+    } catch (error) {
+      console.error('❌ Error inicializando Storage:', error);
+    }
+  }
+
+  /**
+   * Asegura que Storage esté listo antes de operaciones
+   */
+  private async ensureStorageReady(): Promise<void> {
+    await this.storageReady;
+    if (!this.storage) {
+      throw new Error('Storage no está disponible');
+    }
   }
 
   /**
@@ -87,6 +102,8 @@ export class MedicamentoService {
    * Crear un nuevo medicamento
    */
   async crearMedicamento(medicamento: Omit<Medicamento, 'id'>): Promise<Medicamento> {
+    await this.ensureStorageReady(); // ⚡ Espera a que Storage esté listo
+    
     try {
       const nuevoMedicamento: Medicamento = {
         ...medicamento,
@@ -95,10 +112,10 @@ export class MedicamentoService {
 
       const medicamentos = this.medicamentosSubject.value;
       medicamentos.push(nuevoMedicamento);
-      await this.storage?.set('medicamentos', medicamentos);
+      await this.storage!.set('medicamentos', medicamentos);
       
       this.medicamentosSubject.next([...medicamentos]);
-      console.log('✅ Medicamento creado:', nuevoMedicamento);
+      console.log('✅ Medicamento creado y guardado:', nuevoMedicamento);
       
       return nuevoMedicamento;
     } catch (error) {
@@ -111,6 +128,8 @@ export class MedicamentoService {
    * Actualizar un medicamento existente
    */
   async actualizarMedicamento(id: number, datosActualizados: Partial<Medicamento>): Promise<Medicamento> {
+    await this.ensureStorageReady(); // ⚡ Espera a que Storage esté listo
+    
     try {
       const medicamentos = this.medicamentosSubject.value;
       const index = medicamentos.findIndex(m => m.id === id);
@@ -120,10 +139,10 @@ export class MedicamentoService {
       }
 
       medicamentos[index] = { ...medicamentos[index], ...datosActualizados };
-      await this.storage?.set('medicamentos', medicamentos);
+      await this.storage!.set('medicamentos', medicamentos);
       
       this.medicamentosSubject.next([...medicamentos]);
-      console.log('✅ Medicamento actualizado:', medicamentos[index]);
+      console.log('✅ Medicamento actualizado y guardado:', medicamentos[index]);
       
       return medicamentos[index];
     } catch (error) {
@@ -136,15 +155,17 @@ export class MedicamentoService {
    * Eliminar un medicamento
    */
   async eliminarMedicamento(id: number): Promise<void> {
+    await this.ensureStorageReady(); // ⚡ Espera a que Storage esté listo
+    
     try {
       let medicamentos = this.medicamentosSubject.value;
       const medicamentoAEliminar = medicamentos.find(m => m.id === id);
       
       medicamentos = medicamentos.filter(m => m.id !== id);
-      await this.storage?.set('medicamentos', medicamentos);
+      await this.storage!.set('medicamentos', medicamentos);
       
       this.medicamentosSubject.next([...medicamentos]);
-      console.log('✅ Medicamento eliminado:', medicamentoAEliminar);
+      console.log('✅ Medicamento eliminado del Storage:', medicamentoAEliminar);
     } catch (error) {
       console.error('❌ Error al eliminar medicamento:', error);
       throw error;

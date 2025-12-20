@@ -1,5 +1,7 @@
 import { Component } from '@angular/core';
 import { IonApp, IonRouterOutlet } from '@ionic/angular/standalone';
+import { PacienteService } from './services/paciente.service';
+import { MedicamentoService } from './services/medicamento.service';
 
 @Component({
   selector: 'app-root',
@@ -7,5 +9,12 @@ import { IonApp, IonRouterOutlet } from '@ionic/angular/standalone';
   imports: [IonApp, IonRouterOutlet],
 })
 export class AppComponent {
-  constructor() {}
+  constructor(
+    private pacienteService: PacienteService,
+    private medicamentoService: MedicamentoService
+  ) {
+    // Los servicios se inicializan automáticamente al ser inyectados
+    // Esto asegura que Storage esté listo antes que cualquier componente
+    console.log('✅ App inicializada - Storage listo');
+  }
 }
