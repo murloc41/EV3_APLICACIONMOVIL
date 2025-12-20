@@ -15,7 +15,8 @@ import {
 } from '@ionic/angular/standalone';
 
 import { addIcons } from 'ionicons';
-import { saveOutline, personAddOutline } from 'ionicons/icons'; // <-- ¡CORRECCIÓN: Añadido personAddOutline!
+import { saveOutline, personAddOutline } from 'ionicons/icons';
+import { PacienteService } from 'src/app/services/paciente.service';
 
 @Component({
     selector: 'app-paciente-agregar',
@@ -37,8 +38,12 @@ export class PacienteAgregarPage implements OnInit {
     private readonly ID_PATTERN = /^[0-9]{7,9}-[0-9kK]$/; 
 
     // Inyectar FormBuilder y Router para la navegación
-    constructor(private fb: FormBuilder, private router: Router) {
-        addIcons({ saveOutline, personAddOutline }); // <-- ¡CORRECCIÓN: Añadidos iconos!
+    constructor(
+        private fb: FormBuilder, 
+        private router: Router,
+        private pacienteService: PacienteService
+    ) {
+        addIcons({ saveOutline, personAddOutline });
     } 
 
     ngOnInit() {
@@ -57,11 +62,22 @@ export class PacienteAgregarPage implements OnInit {
         });
     }
 
-    submitPaciente() {
+    async submitPaciente() {
         if (this.pacienteForm.valid) {
-            console.log('✅ Paciente registrado. Navegando al listado...');
-            // Navegación post-registro (Volver al listado o al home)
-            this.router.navigate(['/listado']);
+            try {
+                const nuevosPacienteData = {
+                    nombre: this.pacienteForm.get('nombre')?.value,
+                    rut: this.pacienteForm.get('idPaciente')?.value,
+                    piso: this.pacienteForm.get('piso')?.value,
+                    turno: this.pacienteForm.get('turno')?.value
+                };
+
+                await this.pacienteService.crearPaciente(nuevosPacienteData);
+                console.log('✅ Paciente registrado. Navegando al listado...');
+                this.router.navigate(['/listado']);
+            } catch (error) {
+                console.error('❌ Error al crear paciente:', error);
+            }
         } else {
             console.log('❌ Formulario Inválido. Revisar validaciones.');
             this.pacienteForm.markAllAsTouched();

@@ -12,15 +12,7 @@ import {
 import { AlertController } from '@ionic/angular';
 import { addIcons } from 'ionicons';
 import { saveOutline, trashOutline, medkitOutline } from 'ionicons/icons';
-
-// Reutilizamos la interfaz del medicamento
-interface Medicamento {
-    id: number;
-    nombre: string;
-    dosisMg: number;
-    tipo: string;
-    usoDelicado: boolean;
-}
+import { MedicamentoService, Medicamento } from 'src/app/services/medicamento.service';
 
 @Component({
     selector: 'app-medicamento-detalle',
@@ -44,19 +36,26 @@ export class MedicamentoDetallePage implements OnInit {
         private fb: FormBuilder,
         private route: ActivatedRoute,
         private router: Router,
-        private alertController: AlertController
+        private alertController: AlertController,
+        private medicamentoService: MedicamentoService
     ) { 
         addIcons({ saveOutline, trashOutline, medkitOutline });
     }
 
     ngOnInit() {
         const medicamentoIdParam = this.route.snapshot.paramMap.get('id');
-        const idSimulado = medicamentoIdParam ? parseInt(medicamentoIdParam) : 101; 
+        const medicamentoId = medicamentoIdParam ? parseInt(medicamentoIdParam) : 101; 
 
-        // 1. Cargar datos del medicamento (simulado)
-        this.medicamentoActual = this.simularCargaMedicamento(idSimulado);
+        // Cargar medicamento del servicio
+        this.medicamentoActual = this.medicamentoService.obtenerMedicamentoById(medicamentoId) || {
+            id: 0,
+            nombre: 'Medicamento no encontrado',
+            dosisMg: 0,
+            tipo: '',
+            usoDelicado: false
+        };
 
-        // 2. Inicializar el formulario con los datos cargados
+        // Inicializar el formulario con los datos cargados
         this.medicamentoForm = this.fb.group({
             nombre: [this.medicamentoActual.nombre, [Validators.required, Validators.minLength(3)]],
             dosisMg: [this.medicamentoActual.dosisMg, [Validators.required, Validators.min(1), Validators.pattern(/^[0-9]*$/)]],
@@ -65,23 +64,22 @@ export class MedicamentoDetallePage implements OnInit {
         });
     }
 
-    simularCargaMedicamento(id: number): Medicamento {
-        // Datos de simulación para cargar el formulario
-        const datosSimulados: Medicamento[] = [
-            { id: 101, nombre: 'Amlodipino', dosisMg: 50, tipo: 'Antiinflamatorio', usoDelicado: false },
-            { id: 102, nombre: 'Morfina', dosisMg: 10, tipo: 'Analgésico', usoDelicado: true },
-            { id: 103, nombre: 'Amoxicilina', dosisMg: 500, tipo: 'Antibiótico', usoDelicado: false },
-            { id: 104, nombre: 'Tramadol', dosisMg: 50, tipo: 'Analgésico', usoDelicado: true },
-        ];
-        // Devuelve el medicamento encontrado o el primero por defecto
-        return datosSimulados.find(m => m.id === id) || datosSimulados[0];
-    }
-
-    guardarCambios() {
+    async guardarCambios() {
         if (this.medicamentoForm.valid) {
-            console.log('✅ Medicamento actualizado. ID:', this.medicamentoActual.id, 'Datos:', this.medicamentoForm.value);
-            // Navegar de vuelta al listado de medicamentos
-            this.router.navigate(['/medicamento-listado']);
+            try {
+                const datosActualizados = {
+                    nombre: this.medicamentoForm.get('nombre')?.value,
+                    dosisMg: this.medicamentoForm.get('dosisMg')?.value,
+                    tipo: this.medicamentoForm.get('tipo')?.value,
+                    usoDelicado: this.medicamentoForm.get('usoDelicado')?.value
+                };
+
+                await this.medicamentoService.actualizarMedicamento(this.medicamentoActual.id, datosActualizados);
+                console.log('✅ Medicamento actualizado. ID:', this.medicamentoActual.id);
+                this.router.navigate(['/medicamento-listado']);
+            } catch (error) {
+                console.error('❌ Error al actualizar medicamento:', error);
+            }
         } else {
             console.log('❌ Formulario de actualización inválido.');
             this.medicamentoForm.markAllAsTouched();
@@ -101,8 +99,13 @@ export class MedicamentoDetallePage implements OnInit {
         await alert.present();
     }
 
-    eliminarMedicamento() {
-        console.log(`🔥 Medicamento ${this.medicamentoActual.id} eliminado del inventario.`);
-        this.router.navigate(['/medicamento-listado']);
+    async eliminarMedicamento() {
+        try {
+            await this.medicamentoService.eliminarMedicamento(this.medicamentoActual.id);
+            console.log(`✅ Medicamento ${this.medicamentoActual.id} eliminado del inventario.`);
+            this.router.navigate(['/medicamento-listado']);
+        } catch (error) {
+            console.error('❌ Error al eliminar medicamento:', error);
+        }
     }
 }

@@ -1,22 +1,16 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, Router } from '@angular/router';
 import { 
     IonContent, IonHeader, IonTitle, IonToolbar, IonList, IonItem, 
     IonLabel, IonIcon, IonButtons, IonButton, IonSearchbar, IonNote,
-    IonBackButton // <-- ¡CORREGIDO! Añadido para el botón de retroceso
+    IonBackButton, AlertController
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { medkitOutline, trashOutline, createOutline, addCircleOutline, alertCircleOutline } from 'ionicons/icons';
-
-// 1. Definir una interfaz para tipar los datos
-interface Medicamento {
-    id: number;
-    nombre: string;
-    dosisMg: number;
-    tipo: string;
-    usoDelicado: boolean;
-}
+import { MedicamentoService, Medicamento } from 'src/app/services/medicamento.service';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
 @Component({
     selector: 'app-medicamento-listado',
@@ -29,32 +23,62 @@ interface Medicamento {
         IonList, IonItem, IonLabel, IonIcon, IonButtons, IonButton, 
         IonSearchbar, IonNote, 
         RouterLink,
-        IonBackButton // <-- ¡CORREGIDO! Incluido en el array
+        IonBackButton
     ]
 })
-export class MedicamentoListadoPage implements OnInit {
+export class MedicamentoListadoPage implements OnInit, OnDestroy {
 
-    // 2. Arreglo de datos simulados (Simulación de "Read")
-    public medicamentos: Medicamento[] = [
-        { id: 101, nombre: 'Amlodipino', dosisMg: 50, tipo: 'Antiinflamatorio', usoDelicado: false },
-        { id: 102, nombre: 'Morfina', dosisMg: 10, tipo: 'Analgésico', usoDelicado: true },
-        { id: 103, nombre: 'Amoxicilina', dosisMg: 500, tipo: 'Antibiótico', usoDelicado: false },
-        { id: 104, nombre: 'Tramadol', dosisMg: 50, tipo: 'Analgésico', usoDelicado: true },
-    ];
+    public medicamentos: Medicamento[] = [];
+    private destroy$ = new Subject<void>();
 
-    constructor(private router: Router) { 
+    constructor(
+        private medicamentoService: MedicamentoService,
+        private router: Router,
+        private alertController: AlertController
+    ) { 
         addIcons({ medkitOutline, trashOutline, createOutline, addCircleOutline, alertCircleOutline });
     }
 
     ngOnInit() {
+        // Suscribirse a cambios en medicamentos
+        this.medicamentoService.getMedicamentos$()
+            .pipe(takeUntil(this.destroy$))
+            .subscribe(medicamentos => {
+                this.medicamentos = medicamentos;
+                console.log('💊 Listado de medicamentos actualizado:', medicamentos);
+            });
+    }
+
+    ngOnDestroy() {
+        this.destroy$.next();
+        this.destroy$.complete();
     }
 
     verDetalleMedicamento(medicamentoId: number) {
         console.log(`Navegando a detalle del medicamento ID: ${medicamentoId}`);
     }
 
-    confirmarEliminacion(medicamentoId: number, event: Event) {
-        event.stopPropagation(); 
-        console.log(`[C.4] Abriendo ion-alert para eliminar medicamento ID: ${medicamentoId}`);
+    async confirmarEliminacion(medicamentoId: number, event: Event) {
+        event.stopPropagation();
+        
+        const medicamento = this.medicamentoService.obtenerMedicamentoById(medicamentoId);
+        if (!medicamento) return;
+
+        const alert = await this.alertController.create({
+            header: 'Confirmar Eliminación',
+            message: `¿Estás seguro de que deseas **eliminar** ${medicamento.nombre}? Esta acción es irreversible.`,
+            buttons: [
+                { text: 'Cancelar', role: 'cancel' },
+                { 
+                    text: 'Eliminar', 
+                    role: 'destructive', 
+                    handler: async () => {
+                        await this.medicamentoService.eliminarMedicamento(medicamentoId);
+                    }
+                },
+            ],
+        });
+
+        await alert.present();
     }
 }

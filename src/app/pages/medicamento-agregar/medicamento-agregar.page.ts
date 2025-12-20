@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router'; // Necesario para la navegación post-registro
+import { Router } from '@angular/router';
 import { 
     FormBuilder, FormGroup, Validators, ReactiveFormsModule
 } from '@angular/forms'; 
@@ -9,11 +9,12 @@ import {
     IonContent, IonHeader, IonTitle, IonToolbar, IonItem, IonLabel, IonInput, 
     IonButton, IonSelect, IonSelectOption, IonToggle, IonText, 
     IonNote,
-    IonButtons, IonIcon, IonBackButton // <-- ¡CORRECCIÓN: Añadido IonIcon, IonButtons y IonBackButton!
+    IonButtons, IonIcon, IonBackButton
 } from '@ionic/angular/standalone';
 
 import { addIcons } from 'ionicons';
-import { saveOutline, medkitOutline } from 'ionicons/icons'; // Aseguramos que medkitOutline está para el header
+import { saveOutline, medkitOutline } from 'ionicons/icons';
+import { MedicamentoService } from 'src/app/services/medicamento.service';
 
 @Component({
     selector: 'app-medicamento-agregar',
@@ -25,7 +26,7 @@ import { saveOutline, medkitOutline } from 'ionicons/icons'; // Aseguramos que m
         CommonModule, ReactiveFormsModule, 
         IonItem, IonLabel, IonInput, IonButton, IonSelect, IonSelectOption, 
         IonToggle, IonText, IonNote,
-        IonButtons, IonIcon, IonBackButton // <-- ¡CORRECCIÓN: Incluidos en el array!
+        IonButtons, IonIcon, IonBackButton
     ]
 })
 export class MedicamentoAgregarPage implements OnInit {
@@ -33,8 +34,11 @@ export class MedicamentoAgregarPage implements OnInit {
     medicamentoForm!: FormGroup;
     tiposMedicamento = ['Antibiótico', 'Analgésico', 'Antiinflamatorio', 'Vitamina', 'Otro'];
 
-    // Inyectar FormBuilder y Router
-    constructor(private fb: FormBuilder, private router: Router) {
+    constructor(
+        private fb: FormBuilder, 
+        private router: Router,
+        private medicamentoService: MedicamentoService
+    ) {
         addIcons({ saveOutline, medkitOutline });
     } 
 
@@ -53,10 +57,22 @@ export class MedicamentoAgregarPage implements OnInit {
         });
     }
 
-    submitMedicamento() {
+    async submitMedicamento() {
         if (this.medicamentoForm.valid) {
-            console.log('✅ Medicamento registrado. Navegando al listado...');
-            this.router.navigate(['/medicamento-listado']); // Volver al listado de medicamentos
+            try {
+                const nuevoMedicamento = {
+                    nombre: this.medicamentoForm.get('nombre')?.value,
+                    dosisMg: this.medicamentoForm.get('dosisMg')?.value,
+                    tipo: this.medicamentoForm.get('tipo')?.value,
+                    usoDelicado: this.medicamentoForm.get('usoDelicado')?.value
+                };
+
+                await this.medicamentoService.crearMedicamento(nuevoMedicamento);
+                console.log('✅ Medicamento registrado. Navegando al listado...');
+                this.router.navigate(['/medicamento-listado']);
+            } catch (error) {
+                console.error('❌ Error al crear medicamento:', error);
+            }
         } else {
             console.log('❌ Formulario Inválido. Revisar validaciones.');
             this.medicamentoForm.markAllAsTouched();

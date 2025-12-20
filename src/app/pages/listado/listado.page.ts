@@ -1,22 +1,16 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { 
     IonContent, IonHeader, IonTitle, IonToolbar, IonList, IonItem, 
     IonLabel, IonIcon, IonButtons, IonButton, IonSearchbar, 
-    IonBackButton // <-- ¡CORREGIDO! Añadido para el botón de retroceso
+    IonBackButton, AlertController
 } from '@ionic/angular/standalone';
 import { RouterLink } from '@angular/router';
 import { addIcons } from 'ionicons';
 import { personCircleOutline, trashOutline, createOutline, addCircleOutline } from 'ionicons/icons';
-
-// 1. Definir una interfaz para tipar los datos
-interface Paciente {
-    id: number;
-    nombre: string;
-    rut: string;
-    piso: number;
-    turno: 'Mañana' | 'Tarde' | 'Noche';
-}
+import { PacienteService, Paciente } from 'src/app/services/paciente.service';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
 @Component({
     selector: 'app-listado',
@@ -29,33 +23,61 @@ interface Paciente {
         IonList, IonItem, IonLabel, IonIcon, IonButtons, IonButton, 
         IonSearchbar, 
         RouterLink,
-        IonBackButton // <-- ¡CORREGIDO! Incluido en el array
+        IonBackButton
     ]
 })
-export class ListadoPage implements OnInit {
+export class ListadoPage implements OnInit, OnDestroy {
 
-    // 2. Arreglo de datos simulados (Punto B.3)
-    public pacientes: Paciente[] = [
-        { id: 1, nombre: 'Ana María Soto', rut: '19.456.789-K', piso: 3, turno: 'Mañana' },
-        { id: 2, nombre: 'Roberto González', rut: '15.123.456-7', piso: 5, turno: 'Tarde' },
-        { id: 3, nombre: 'Javier Fuentes', rut: '18.987.654-2', piso: 1, turno: 'Noche' },
-        { id: 4, nombre: 'Laura Pérez', rut: '20.555.111-9', piso: 3, turno: 'Mañana' },
-    ];
+    public pacientes: Paciente[] = [];
+    private destroy$ = new Subject<void>();
 
-    
-    constructor() { 
+    constructor(
+        private pacienteService: PacienteService,
+        private alertController: AlertController
+    ) { 
         addIcons({ personCircleOutline, trashOutline, createOutline, addCircleOutline });
     }
 
     ngOnInit() {
+        // Suscribirse a cambios en pacientes
+        this.pacienteService.getPacientes$()
+            .pipe(takeUntil(this.destroy$))
+            .subscribe(pacientes => {
+                this.pacientes = pacientes;
+                console.log('📋 Listado actualizado:', pacientes);
+            });
+    }
+
+    ngOnDestroy() {
+        this.destroy$.next();
+        this.destroy$.complete();
     }
 
     verDetalle(pacienteId: number) {
         console.log(`Navegando a detalle del paciente ID: ${pacienteId}`);
     }
 
-    confirmarEliminacion(pacienteId: number, event: Event) {
+    async confirmarEliminacion(pacienteId: number, event: Event) {
         event.stopPropagation();
-        console.log(`[C.4] Abriendo cuadro de diálogo de confirmación para paciente ID: ${pacienteId}`);
+        
+        const paciente = this.pacienteService.obtenerPacienteById(pacienteId);
+        if (!paciente) return;
+
+        const alert = await this.alertController.create({
+            header: 'Confirmar Eliminación',
+            message: `¿Estás seguro de que deseas **eliminar** al paciente ${paciente.nombre}? Esta acción es irreversible.`,
+            buttons: [
+                { text: 'Cancelar', role: 'cancel' },
+                { 
+                    text: 'Eliminar', 
+                    role: 'destructive', 
+                    handler: async () => {
+                        await this.pacienteService.eliminarPaciente(pacienteId);
+                    }
+                },
+            ],
+        });
+
+        await alert.present();
     }
 }

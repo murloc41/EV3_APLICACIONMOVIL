@@ -13,21 +13,12 @@ import { AlertController } from '@ionic/angular';
 import { addIcons } from 'ionicons';
 import { arrowBackOutline, saveOutline, trashOutline, cameraOutline, locateOutline } from 'ionicons/icons';
 
-//  Importar Capacidades Nativas y Servicio de Persistencia
+//  Importar Capacidades Nativas y Servicios
 import { Capacitor } from '@capacitor/core';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { Geolocation, PermissionStatus } from '@capacitor/geolocation';
 import { PreferencesService } from 'src/app/services/preferences.service';
-
-
-// Reutilizamos la interfaz del paciente
-interface Paciente {
-    id: number;
-    nombre: string;
-    rut: string;
-    piso: number;
-    turno: 'Mañana' | 'Tarde' | 'Noche';
-}
+import { PacienteService, Paciente } from 'src/app/services/paciente.service';
 
 @Component({
     selector: 'app-detalle',
@@ -59,8 +50,8 @@ export class DetallePage implements OnInit {
         private route: ActivatedRoute,
         private router: Router,
         private alertController: AlertController,
-        //  Inyectar el Servicio de Persistencia
-        private preferencesService: PreferencesService 
+        private preferencesService: PreferencesService,
+        private pacienteService: PacienteService
     ) { 
         //  Añadir íconos de los periféricos
         addIcons({ arrowBackOutline, saveOutline, trashOutline, cameraOutline, locateOutline });
@@ -68,9 +59,16 @@ export class DetallePage implements OnInit {
 
     async ngOnInit() { 
         const pacienteIdParam = this.route.snapshot.paramMap.get('id');
-        const idSimulado = pacienteIdParam ? parseInt(pacienteIdParam) : 2; 
+        const pacienteId = pacienteIdParam ? parseInt(pacienteIdParam) : 2; 
 
-        this.pacienteActual = this.simularCargaPaciente(idSimulado);
+        // Cargar paciente del servicio
+        this.pacienteActual = this.pacienteService.obtenerPacienteById(pacienteId) || {
+            id: 0,
+            nombre: 'Paciente no encontrado',
+            rut: '',
+            piso: 0,
+            turno: 'Mañana'
+        };
 
         this.pacienteForm = this.fb.group({
             nombre: [this.pacienteActual.nombre, [Validators.required, Validators.minLength(3)]],
@@ -96,22 +94,24 @@ export class DetallePage implements OnInit {
         
     }
 
-    simularCargaPaciente(id: number): Paciente {
-        const datosSimulados: Paciente[] = [
-            { id: 1, nombre: 'Ana María Soto', rut: '19.456.789-K', piso: 3, turno: 'Mañana' },
-            { id: 2, nombre: 'Roberto González', rut: '15.123.456-7', piso: 5, turno: 'Tarde' },
-            { id: 3, nombre: 'Javier Fuentes', rut: '18.987.654-2', piso: 1, turno: 'Noche' },
-            { id: 4, nombre: 'Laura Pérez', rut: '20.555.111-9', piso: 3, turno: 'Mañana' },
-        ];
-        return datosSimulados.find(p => p.id === id) || datosSimulados[0];
-    }
-
-    guardarCambios() {
+    async guardarCambios() {
         if (this.pacienteForm.valid) {
-            console.log(' Paciente actualizado. ID:', this.pacienteActual.id, 'Datos:', this.pacienteForm.value);
-            this.router.navigate(['/listado']);
+            const datosActualizados = {
+                nombre: this.pacienteForm.get('nombre')?.value,
+                rut: this.pacienteForm.get('idPaciente')?.value,
+                piso: this.pacienteForm.get('piso')?.value,
+                turno: this.pacienteForm.get('turno')?.value
+            };
+
+            try {
+                await this.pacienteService.actualizarPaciente(this.pacienteActual.id, datosActualizados);
+                console.log('✅ Paciente actualizado. ID:', this.pacienteActual.id);
+                this.router.navigate(['/listado']);
+            } catch (error) {
+                console.error('❌ Error al actualizar paciente:', error);
+            }
         } else {
-            console.log(' Formulario inválido para actualización.');
+            console.log('❌ Formulario inválido para actualización.');
             this.pacienteForm.markAllAsTouched();
         }
     }
@@ -252,10 +252,18 @@ export class DetallePage implements OnInit {
     }
 
     async eliminarPaciente() {
-        // Limpiar datos persistidos del paciente
-        await this.preferencesService.removeValue(`foto_${this.pacienteActual.id}`);
-        await this.preferencesService.removeValue(`coords_${this.pacienteActual.id}`);
-        console.log(` Paciente ${this.pacienteActual.id} eliminado del sistema (datos persistidos limpiados).`);
-        this.router.navigate(['/listado']);
+        try {
+            // Limpiar datos persistidos del paciente (fotos y GPS)
+            await this.preferencesService.removeValue(`foto_${this.pacienteActual.id}`);
+            await this.preferencesService.removeValue(`coords_${this.pacienteActual.id}`);
+            
+            // Eliminar del servicio (base de datos persistente)
+            await this.pacienteService.eliminarPaciente(this.pacienteActual.id);
+            
+            console.log(`✅ Paciente ${this.pacienteActual.id} eliminado del sistema.`);
+            this.router.navigate(['/listado']);
+        } catch (error) {
+            console.error('❌ Error al eliminar paciente:', error);
+        }
     }
 }
