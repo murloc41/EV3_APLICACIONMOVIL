@@ -35,7 +35,8 @@ export class PacienteAgregarPage implements OnInit {
 
     pacienteForm!: FormGroup;
     turnos = ['Mañana', 'Tarde', 'Noche'];
-    private readonly ID_PATTERN = /^[0-9]{7,9}-[0-9kK]$/; 
+    // ⚡ ARREGLO: Patrón que acepta RUT con o sin puntos: 19.456.789-K o 1234567-K
+    private readonly ID_PATTERN = /^[0-9]{1,2}\.?[0-9]{3}\.?[0-9]{3}-[0-9kK]$/i; 
 
     // Inyectar FormBuilder y Router para la navegación
     constructor(

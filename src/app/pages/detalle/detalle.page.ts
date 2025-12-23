@@ -38,7 +38,8 @@ export class DetallePage implements OnInit {
     pacienteForm!: FormGroup;
     pacienteActual!: Paciente; 
     turnos = ['Mañana', 'Tarde', 'Noche'];
-    private readonly ID_PATTERN = /^[0-9]{7,9}-[0-9kK]$/; 
+    // ⚡ ARREGLO: Patrón que acepta RUT con o sin puntos: 19.456.789-K o 1234567-K
+    private readonly ID_PATTERN = /^[0-9]{1,2}\.?[0-9]{3}\.?[0-9]{3}-[0-9kK]$/i; 
     
     //  Propiedades para Cámara y Geolocalización
     fotoUrl: string | undefined; 
@@ -79,16 +80,24 @@ export class DetallePage implements OnInit {
             turno: [this.pacienteActual.turno, Validators.required]
         });
 
-        // ⚡ ARREGLO: Forzar validación después de cargar datos
+        // ⚡ CRÍTICO: El formulario se carga con datos válidos pero Angular lo marca como "invalid"
+        // porque los campos son "pristine" (sin cambios). Esto deshabilita el botón "Guardar".
+        // Solución: Marcar controles como "touched" y validar después de que Angular renderize
+        this.pacienteForm.markAllAsTouched();
+        
         setTimeout(() => {
-            this.pacienteForm.updateValueAndValidity();
-            console.log('📝 Formulario inicializado. Válido:', this.pacienteForm.valid);
-            console.log('📝 Errores:', this.pacienteForm.errors);
+            console.log('📝 Estado del formulario después de cargar:');
+            console.log('  - Válido:', this.pacienteForm.valid);
+            console.log('  - Pristine (sin cambios):', this.pacienteForm.pristine);
+            console.log('  - Touched:', this.pacienteForm.touched);
+            
             Object.keys(this.pacienteForm.controls).forEach(key => {
                 const control = this.pacienteForm.get(key);
-                if (control?.invalid) {
-                    console.log(`❌ Campo "${key}" inválido:`, control.errors);
-                }
+                console.log(`  - Campo "${key}":`, {
+                    value: control?.value,
+                    valid: control?.valid,
+                    errors: control?.errors
+                });
             });
         }, 100);
         
@@ -279,17 +288,28 @@ export class DetallePage implements OnInit {
 
     async eliminarPaciente() {
         try {
+            console.log(`🗑️ Iniciando eliminación de paciente "${this.pacienteActual.nombre}" (ID: ${this.pacienteActual.id})...`);
+            
             // Limpiar datos persistidos del paciente (fotos y GPS)
             await this.preferencesService.removeValue(`foto_${this.pacienteActual.id}`);
+            console.log(`✅ Foto eliminada`);
+            
             await this.preferencesService.removeValue(`coords_${this.pacienteActual.id}`);
+            console.log(`✅ Coordenadas eliminadas`);
             
             // Eliminar del servicio (base de datos persistente)
             await this.pacienteService.eliminarPaciente(this.pacienteActual.id);
+            console.log(`✅ Paciente ${this.pacienteActual.id} ELIMINADO del Storage`);
             
-            console.log(`✅ Paciente ${this.pacienteActual.id} eliminado del sistema.`);
             this.router.navigate(['/listado']);
         } catch (error) {
             console.error('❌ Error al eliminar paciente:', error);
+            const alert = await this.alertController.create({
+                header: 'Error',
+                message: `No se pudo eliminar el paciente: ${error}`,
+                buttons: ['OK']
+            });
+            await alert.present();
         }
     }
 }
