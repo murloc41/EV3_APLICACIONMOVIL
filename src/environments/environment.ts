@@ -3,7 +3,11 @@
 // The list of file replacements can be found in `angular.json`.
 
 export const environment = {
-  production: false
+  production: false,
+  // Cambia esta URL cuando nos des tu endpoint público de Koyeb
+  apiUrl: 'https://TU-BACKEND-KOYEB.app',
+  // Activa para usar el backend remoto en lugar de Storage local
+  useRemoteApi: false,
 };
 
 /*

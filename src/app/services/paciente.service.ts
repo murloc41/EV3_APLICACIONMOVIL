@@ -1,6 +1,8 @@
 import { Injectable } from '@angular/core';
 import { Storage } from '@ionic/storage-angular';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { BehaviorSubject, Observable, firstValueFrom } from 'rxjs';
+import { environment } from '../../environments/environment';
+import { RestApiService } from './rest-api.service';
 
 export interface Paciente {
   id: number;
@@ -19,8 +21,9 @@ export class PacienteService {
   public pacientes$ = this.pacientesSubject.asObservable();
   private nextId = 5; // Para generar IDs nuevos (comenzamos en 5)
   private storageReady: Promise<void>; // ⚡ Promise para esperar inicialización
+  private readonly useRemote = environment.useRemoteApi === true;
 
-  constructor(private storageService: Storage) {
+  constructor(private storageService: Storage, private api: RestApiService) {
     this.storageReady = this.initStorage();
   }
 
@@ -29,11 +32,16 @@ export class PacienteService {
    */
   async initStorage(): Promise<void> {
     try {
-      this.storage = await this.storageService.create();
-      await this.cargarPacientesDelStorage();
-      console.log('✅ PacienteService: Storage inicializado');
+      if (this.useRemote) {
+        await this.cargarPacientesRemotos();
+        console.log('✅ PacienteService: API remota inicializada');
+      } else {
+        this.storage = await this.storageService.create();
+        await this.cargarPacientesDelStorage();
+        console.log('✅ PacienteService: Storage inicializado');
+      }
     } catch (error) {
-      console.error('❌ Error inicializando Storage:', error);
+      console.error('❌ Error inicializando servicio de pacientes:', error);
     }
   }
 
@@ -42,6 +50,7 @@ export class PacienteService {
    */
   private async ensureStorageReady(): Promise<void> {
     await this.storageReady;
+    if (this.useRemote) return;
     if (!this.storage) {
       throw new Error('Storage no está disponible');
     }
@@ -78,6 +87,19 @@ export class PacienteService {
   }
 
   /**
+   * Carga todos los pacientes desde API remota
+   */
+  private async cargarPacientesRemotos() {
+    try {
+      const pacientes = await firstValueFrom(this.api.getPacientes());
+      this.pacientesSubject.next(pacientes);
+      console.log('✅ Pacientes cargados desde API remota:', pacientes);
+    } catch (error) {
+      console.error('❌ Error al cargar pacientes desde API remota:', error);
+    }
+  }
+
+  /**
    * Obtener todos los pacientes (Síncrono)
    */
   obtenerPacientes(): Paciente[] {
@@ -102,21 +124,22 @@ export class PacienteService {
    * Crear un nuevo paciente
    */
   async crearPaciente(paciente: Omit<Paciente, 'id'>): Promise<Paciente> {
-    await this.ensureStorageReady(); // ⚡ Espera a que Storage esté listo
-    
+    await this.ensureStorageReady(); // ⚡ Espera a que el servicio esté listo
     try {
-      const nuevoPaciente: Paciente = {
-        ...paciente,
-        id: this.nextId++
-      };
+      if (this.useRemote) {
+        const creado = await firstValueFrom(this.api.createPaciente(paciente));
+        const pacientes = [...this.pacientesSubject.value, creado];
+        this.pacientesSubject.next(pacientes);
+        console.log('✅ Paciente creado en API remota:', creado);
+        return creado;
+      }
 
+      const nuevoPaciente: Paciente = { ...paciente, id: this.nextId++ };
       const pacientes = this.pacientesSubject.value;
       pacientes.push(nuevoPaciente);
       await this.storage!.set('pacientes', pacientes);
-      
       this.pacientesSubject.next([...pacientes]);
-      console.log('✅ Paciente creado y guardado:', nuevoPaciente);
-      
+      console.log('✅ Paciente creado y guardado (local):', nuevoPaciente);
       return nuevoPaciente;
     } catch (error) {
       console.error('❌ Error al crear paciente:', error);
@@ -128,22 +151,23 @@ export class PacienteService {
    * Actualizar un paciente existente
    */
   async actualizarPaciente(id: number, datosActualizados: Partial<Paciente>): Promise<Paciente> {
-    await this.ensureStorageReady(); // ⚡ Espera a que Storage esté listo
-    
+    await this.ensureStorageReady();
     try {
-      const pacientes = this.pacientesSubject.value;
-      const index = pacientes.findIndex(p => p.id === id);
-
-      if (index === -1) {
-        throw new Error(`Paciente con ID ${id} no encontrado`);
+      if (this.useRemote) {
+        const actualizado = await firstValueFrom(this.api.updatePaciente(id, datosActualizados));
+        const pacientes = this.pacientesSubject.value.map(p => (p.id === id ? actualizado : p));
+        this.pacientesSubject.next(pacientes);
+        console.log('✅ Paciente actualizado en API remota:', actualizado);
+        return actualizado;
       }
 
+      const pacientes = this.pacientesSubject.value;
+      const index = pacientes.findIndex(p => p.id === id);
+      if (index === -1) throw new Error(`Paciente con ID ${id} no encontrado`);
       pacientes[index] = { ...pacientes[index], ...datosActualizados };
       await this.storage!.set('pacientes', pacientes);
-      
       this.pacientesSubject.next([...pacientes]);
-      console.log('✅ Paciente actualizado y guardado:', pacientes[index]);
-      
+      console.log('✅ Paciente actualizado y guardado (local):', pacientes[index]);
       return pacientes[index];
     } catch (error) {
       console.error('❌ Error al actualizar paciente:', error);
@@ -155,17 +179,22 @@ export class PacienteService {
    * Eliminar un paciente
    */
   async eliminarPaciente(id: number): Promise<void> {
-    await this.ensureStorageReady(); // ⚡ Espera a que Storage esté listo
-    
+    await this.ensureStorageReady();
     try {
+      if (this.useRemote) {
+        await firstValueFrom(this.api.deletePaciente(id));
+        const pacientes = this.pacientesSubject.value.filter(p => p.id !== id);
+        this.pacientesSubject.next(pacientes);
+        console.log('✅ Paciente eliminado en API remota:', id);
+        return;
+      }
+
       let pacientes = this.pacientesSubject.value;
       const pacienteAEliminar = pacientes.find(p => p.id === id);
-      
       pacientes = pacientes.filter(p => p.id !== id);
       await this.storage!.set('pacientes', pacientes);
-      
       this.pacientesSubject.next([...pacientes]);
-      console.log('✅ Paciente eliminado:', pacienteAEliminar);
+      console.log('✅ Paciente eliminado (local):', pacienteAEliminar);
     } catch (error) {
       console.error('❌ Error al eliminar paciente:', error);
       throw error;
