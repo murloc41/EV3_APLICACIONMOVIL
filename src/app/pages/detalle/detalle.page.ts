@@ -70,12 +70,27 @@ export class DetallePage implements OnInit {
             turno: 'Mañana'
         };
 
+        console.log('🔍 Cargando paciente:', this.pacienteActual);
+
         this.pacienteForm = this.fb.group({
             nombre: [this.pacienteActual.nombre, [Validators.required, Validators.minLength(3)]],
             idPaciente: [this.pacienteActual.rut, [Validators.required, Validators.pattern(this.ID_PATTERN)]],
             piso: [this.pacienteActual.piso, [Validators.required, Validators.min(1)]],
             turno: [this.pacienteActual.turno, Validators.required]
         });
+
+        // ⚡ ARREGLO: Forzar validación después de cargar datos
+        setTimeout(() => {
+            this.pacienteForm.updateValueAndValidity();
+            console.log('📝 Formulario inicializado. Válido:', this.pacienteForm.valid);
+            console.log('📝 Errores:', this.pacienteForm.errors);
+            Object.keys(this.pacienteForm.controls).forEach(key => {
+                const control = this.pacienteForm.get(key);
+                if (control?.invalid) {
+                    console.log(`❌ Campo "${key}" inválido:`, control.errors);
+                }
+            });
+        }, 100);
         
         //  Persistencia: Recargar datos nativos al iniciar
         
@@ -95,6 +110,10 @@ export class DetallePage implements OnInit {
     }
 
     async guardarCambios() {
+        console.log('💾 Intentando guardar cambios...');
+        console.log('📝 Formulario válido:', this.pacienteForm.valid);
+        console.log('📝 Datos del formulario:', this.pacienteForm.value);
+        
         if (this.pacienteForm.valid) {
             const datosActualizados = {
                 nombre: this.pacienteForm.get('nombre')?.value,
@@ -105,13 +124,20 @@ export class DetallePage implements OnInit {
 
             try {
                 await this.pacienteService.actualizarPaciente(this.pacienteActual.id, datosActualizados);
-                console.log('✅ Paciente actualizado. ID:', this.pacienteActual.id);
+                console.log('✅ Paciente actualizado exitosamente. ID:', this.pacienteActual.id);
                 this.router.navigate(['/listado']);
             } catch (error) {
                 console.error('❌ Error al actualizar paciente:', error);
             }
         } else {
             console.log('❌ Formulario inválido para actualización.');
+            console.log('❌ Errores del formulario:', this.pacienteForm.errors);
+            Object.keys(this.pacienteForm.controls).forEach(key => {
+                const control = this.pacienteForm.get(key);
+                if (control?.invalid) {
+                    console.error(`❌ Campo "${key}" inválido:`, control.errors);
+                }
+            });
             this.pacienteForm.markAllAsTouched();
         }
     }

@@ -18,18 +18,33 @@ export class PacienteService {
   private pacientesSubject = new BehaviorSubject<Paciente[]>([]);
   public pacientes$ = this.pacientesSubject.asObservable();
   private nextId = 5; // Para generar IDs nuevos (comenzamos en 5)
+  private storageReady: Promise<void>; // ⚡ Promise para esperar inicialización
 
   constructor(private storageService: Storage) {
-    this.initStorage();
+    this.storageReady = this.initStorage();
   }
 
   /**
    * Inicializa el Storage y carga datos por defecto
    */
-  async initStorage() {
-    await this.storageService.create();
-    this.storage = this.storageService;
-    await this.cargarPacientesDelStorage();
+  async initStorage(): Promise<void> {
+    try {
+      this.storage = await this.storageService.create();
+      await this.cargarPacientesDelStorage();
+      console.log('✅ PacienteService: Storage inicializado');
+    } catch (error) {
+      console.error('❌ Error inicializando Storage:', error);
+    }
+  }
+
+  /**
+   * Asegura que Storage esté listo antes de operaciones
+   */
+  private async ensureStorageReady(): Promise<void> {
+    await this.storageReady;
+    if (!this.storage) {
+      throw new Error('Storage no está disponible');
+    }
   }
 
   /**
@@ -87,6 +102,8 @@ export class PacienteService {
    * Crear un nuevo paciente
    */
   async crearPaciente(paciente: Omit<Paciente, 'id'>): Promise<Paciente> {
+    await this.ensureStorageReady(); // ⚡ Espera a que Storage esté listo
+    
     try {
       const nuevoPaciente: Paciente = {
         ...paciente,
@@ -95,10 +112,10 @@ export class PacienteService {
 
       const pacientes = this.pacientesSubject.value;
       pacientes.push(nuevoPaciente);
-      await this.storage?.set('pacientes', pacientes);
+      await this.storage!.set('pacientes', pacientes);
       
       this.pacientesSubject.next([...pacientes]);
-      console.log('✅ Paciente creado:', nuevoPaciente);
+      console.log('✅ Paciente creado y guardado:', nuevoPaciente);
       
       return nuevoPaciente;
     } catch (error) {
@@ -111,6 +128,8 @@ export class PacienteService {
    * Actualizar un paciente existente
    */
   async actualizarPaciente(id: number, datosActualizados: Partial<Paciente>): Promise<Paciente> {
+    await this.ensureStorageReady(); // ⚡ Espera a que Storage esté listo
+    
     try {
       const pacientes = this.pacientesSubject.value;
       const index = pacientes.findIndex(p => p.id === id);
@@ -120,10 +139,10 @@ export class PacienteService {
       }
 
       pacientes[index] = { ...pacientes[index], ...datosActualizados };
-      await this.storage?.set('pacientes', pacientes);
+      await this.storage!.set('pacientes', pacientes);
       
       this.pacientesSubject.next([...pacientes]);
-      console.log('✅ Paciente actualizado:', pacientes[index]);
+      console.log('✅ Paciente actualizado y guardado:', pacientes[index]);
       
       return pacientes[index];
     } catch (error) {
@@ -136,12 +155,14 @@ export class PacienteService {
    * Eliminar un paciente
    */
   async eliminarPaciente(id: number): Promise<void> {
+    await this.ensureStorageReady(); // ⚡ Espera a que Storage esté listo
+    
     try {
       let pacientes = this.pacientesSubject.value;
       const pacienteAEliminar = pacientes.find(p => p.id === id);
       
       pacientes = pacientes.filter(p => p.id !== id);
-      await this.storage?.set('pacientes', pacientes);
+      await this.storage!.set('pacientes', pacientes);
       
       this.pacientesSubject.next([...pacientes]);
       console.log('✅ Paciente eliminado:', pacienteAEliminar);
